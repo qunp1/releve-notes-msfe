@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relevé de Notes - Master MSFE</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="index.css">
+</head>
+
+<body>
+    <div class="background-elements">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="app-container">
+        <header class="app-header">
+            <div class="logo-container">
+                <img src="logo.jpg" alt="Logo du Master" class="master-logo" id="masterLogo">
+            </div>
+            <h1>Management Stratégique et Finance d'Entreprise</h1>
+            <p class="subtitle">Promotion 2024 - 2026</p>
+        </header>
+
+        <div class="search-section no-print">
+            <div class="search-bar">
+                <svg class="search-icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor"
+                    stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" id="searchInput" list="studentsList" placeholder="Entrez votre Nom ou Code Apogée..."
+                    autocomplete="off">
+                <datalist id="studentsList">
+                    <!-- Options injected here by JS -->
+                </datalist>
+                <button id="searchButton" class="btn-primary">Rechercher</button>
+            </div>
+            <div id="errorMessage" class="error-message"></div>
+        </div>
+
+        <div id="resultsContainer" class="results-container hidden">
+            <!-- Action Buttons -->
+            <div class="actions-bar no-print">
+                <a id="reportButton" href="#" class="btn-secondary" style="margin-right: auto;  text-decoration: none;">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path
+                            d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
+                        </path>
+                        <line x1="12" y1="9" x2="12" y2="13"></line>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                    Signaler une erreur
+                </a>
+                <button id="printButton" class="btn-secondary">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                        <rect x="6" y="14" width="12" height="8"></rect>
+                    </svg>
+                    Imprimer le relevé
+                </button>
+            </div>
+
+            <!-- Student Info Header -->
+            <div class="student-profile glass-card">
+                <div class="profile-avatar" id="profileAvatar">A</div>
+                <div class="profile-details">
+                    <h2 id="studentName">Nom Prénom</h2>
+                    <p class="student-id">Code Apogée: <span id="studentApogee">1234567</span></p>
+                </div>
+                <div class="global-average">
+                    <span class="average-label">Moyenne Globale</span>
+                    <span class="average-value" id="globalAverage">--</span>
+                </div>
+            </div>
+
+            <!-- Semesters Container -->
+            <div class="semesters-grid">
+                <!-- Semester 1 Card -->
+                <div class="semester-card glass-card fade-in" style="--animation-order: 1;">
+                    <div class="semester-header">
+                        <h3>Semestre 1</h3>
+                        <div class="semester-average" id="s1Average">--</div>
+                    </div>
+                    <div class="subjects-list" id="s1Subjects">
+                        <!-- Subjects injected here -->
+                    </div>
+                </div>
+
+                <!-- Semester 2 Card -->
+                <div class="semester-card glass-card fade-in" style="--animation-order: 2;">
+                    <div class="semester-header">
+                        <h3>Semestre 2</h3>
+                        <div class="semester-average" id="s2Average">--</div>
+                    </div>
+                    <div class="subjects-list" id="s2Subjects">
+                        <!-- Subjects injected here -->
+                    </div>
+                </div>
+
+                <!-- Semester 3 Card -->
+                <div class="semester-card glass-card fade-in" style="--animation-order: 3;">
+                    <div class="semester-header">
+                        <h3>Semestre 3</h3>
+                        <div class="semester-average" id="s3Average">--</div>
+                    </div>
+                    <div class="subjects-list" id="s3Subjects">
+                        <!-- Subjects injected here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data source generated from Excel files -->
+    <script src="data.js"></script>
+    <!-- Application Logic -->
+    <script src="app.js"></script>
+</body>
+
+</html>

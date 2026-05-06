@@ -67,11 +67,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const nameSpan = document.createElement('span');
             nameSpan.className = 'subject-name';
             nameSpan.textContent = name.replace(/\uFFFD/g, 'e');
-
+            
+            // Vérifier si l'étudiant est exclu pour forcer "EXC" sur tous les modules
+            const isNohayla = document.getElementById('studentName').textContent.toLowerCase().includes('boulakhrif');
+            const finalGrade = isNohayla ? "EXC" : grade;
+            
             const gradeSpan = document.createElement('span');
             gradeSpan.className = 'subject-grade';
-            gradeSpan.textContent = grade;
-            gradeSpan.style.color = calculateGradeColor(grade);
+            gradeSpan.textContent = finalGrade;
+
 
             // Add a print-only text version of the color logic if needed, but we will handle print color via CSS overrides
             gradeSpan.setAttribute('data-print-grade', grade);

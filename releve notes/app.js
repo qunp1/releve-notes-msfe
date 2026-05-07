@@ -569,8 +569,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         angleLines: { color: 'rgba(0,0,0,0.1)' },
                         grid: { color: 'rgba(0,0,0,0.1)' },
                         pointLabels: {
-                            font: { family: "'Inter', sans-serif", size: 11 },
-                            color: '#475569'
+                            font: { family: "'Inter', sans-serif", size: window.innerWidth < 768 ? 9 : 11 },
+                            color: '#475569',
+                            callback: function(label) {
+                                if (window.innerWidth < 768 && label.length > 10) {
+                                    return label.substring(0, 10) + '...';
+                                }
+                                return label;
+                            }
                         },
                         ticks: {
                             stepSize: 4,

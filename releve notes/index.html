@@ -47,7 +47,26 @@
                 </datalist>
                 <button id="searchButton" class="btn-primary">Rechercher</button>
             </div>
+            <div style="text-align: center; margin-top: 1rem;">
+                <button id="leaderboardBtn" class="btn-secondary" style="margin: 0 auto; display: inline-flex;">
+                    Voir le Classement
+                </button>
+            </div>
             <div id="errorMessage" class="error-message"></div>
+        </div>
+
+        <!-- Leaderboard Section -->
+        <div id="leaderboardContainer" class="leaderboard-container hidden no-print glass-card fade-in"
+            style="--animation-order: 0.2; margin-bottom: 2rem;">
+            <div class="leaderboard-header"
+                style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 1rem; margin-bottom: 1rem;">
+                <h2 style="font-size: 1.5rem; color: #0f172a;">Classement de la Promotion</h2>
+                <button id="closeLeaderboardBtn"
+                    style="background: transparent; border: none; font-size: 1.5rem; cursor: pointer; color: #64748b;">&times;</button>
+            </div>
+            <div class="leaderboard-list" id="leaderboardList">
+                <!-- Items injected by JS -->
+            </div>
         </div>
 
         <div id="resultsContainer" class="results-container hidden">
@@ -85,6 +104,29 @@
                 <div class="global-average">
                     <span class="average-label">Moyenne Globale</span>
                     <span class="average-value" id="globalAverage">--</span>
+                </div>
+            </div>
+
+            <!-- Chart Section -->
+            <div class="chart-section glass-card fade-in no-print" style="--animation-order: 0.5;" id="chartSection">
+                <div class="chart-header-wrapper">
+                    <div class="chart-header">
+                        <h3>Analyse des Performances</h3>
+                        <div class="chart-toggles">
+                            <button class="toggle-btn active" data-semester="s1">S1</button>
+                            <button class="toggle-btn" data-semester="s2">S2</button>
+                            <button class="toggle-btn" data-semester="s3">S3</button>
+                        </div>
+                    </div>
+                    <div class="compare-section">
+                        <label for="compareSelect">Comparer avec :</label>
+                        <select id="compareSelect" class="compare-select">
+                            <option value="average">Moyenne de la classe</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="radarChart"></canvas>
                 </div>
             </div>
 
@@ -126,6 +168,8 @@
         </div>
     </div>
 
+    <!-- Chart.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Data source generated from Excel files -->
     <script src="data.js"></script>
     <!-- Application Logic -->

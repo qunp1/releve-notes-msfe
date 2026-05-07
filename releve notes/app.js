@@ -1,631 +1,928 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const searchInput = document.getElementById('searchInput');
-    const searchButton = document.getElementById('searchButton');
-    const errorMessage = document.getElementById('errorMessage');
-    const resultsContainer = document.getElementById('resultsContainer');
-    const studentsListEl = document.getElementById('studentsList');
-    const printButton = document.getElementById('printButton');
+:root {
+    /* Light Theme Palette */
+    --bg-color: #f1f5f9;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --accent: #0ea5e9;
+    
+    /* Light Glassmorphism */
+    --glass-bg: rgba(255, 255, 255, 0.6);
+    --glass-border: rgba(255, 255, 255, 0.8);
+    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+}
 
-    // UI Elements
-    const studentNameEl = document.getElementById('studentName');
-    const studentApogeeEl = document.getElementById('studentApogee');
-    const profileAvatarEl = document.getElementById('profileAvatar');
-    const globalAverageEl = document.getElementById('globalAverage');
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
 
-    // Process and Normalize Data
-    const students = new Map();
-    const classAverages = { s1: {}, s2: {}, s3: {} };
-    let currentStudent = null;
-    let radarChartInstance = null;
-    let activeSemesterChart = 's1';
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    overflow-x: hidden;
+    position: relative;
+    line-height: 1.6;
+}
 
-    // Helper to calculate dynamic grade color (Red to Green)
-    const calculateGradeColor = (gradeStr) => {
-        const grade = parseFloat(gradeStr);
-        if (isNaN(grade)) return '#475569'; // Default slate gray for 'AB', 'EXC', etc.
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', sans-serif;
+}
 
-        let hue, saturation = 80, lightness;
+/* Background Blobs for Modern Vibe (Light Mode) */
+.background-elements {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1;
+    overflow: hidden;
+    background: linear-gradient(135deg, #e0f2fe 0%, #f1f5f9 100%);
+}
 
-        if (grade < 10) {
-            // Below average: Red (hue 0) to Orange (hue 30)
-            hue = (grade / 10) * 30;
-            // Darker red for lower grades, slightly lighter for grades near 10
-            lightness = 40 + (grade / 10) * 10;
-        } else {
-            // Above average: Yellow-Green (hue 70) to Pure Green (hue 140)
-            hue = 70 + ((grade - 10) / 10) * 70;
-            // Darker green for higher grades
-            lightness = 45 - ((grade - 10) / 10) * 15;
-        }
+.blob {
+    position: absolute;
+    filter: blur(80px);
+    border-radius: 50%;
+    opacity: 0.6;
+    animation: float 20s infinite alternate ease-in-out;
+}
 
-        return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-    };
+.blob-1 {
+    top: -10%;
+    left: -10%;
+    width: 50vw;
+    height: 50vw;
+    background: radial-gradient(circle, #bae6fd 0%, transparent 70%);
+}
 
-    // Helper to render subjects
-    const renderSubjects = (containerId, subjectsObj, average) => {
-        const container = document.getElementById(containerId);
-        const avgEl = document.getElementById(containerId.replace('Subjects', 'Average'));
+.blob-2 {
+    bottom: -20%;
+    right: -10%;
+    width: 60vw;
+    height: 60vw;
+    background: radial-gradient(circle, #e2e8f0 0%, transparent 70%);
+    animation-delay: -5s;
+}
 
-        container.innerHTML = '';
+.blob-3 {
+    top: 40%;
+    left: 60%;
+    width: 40vw;
+    height: 40vw;
+    background: radial-gradient(circle, #bfdbfe 0%, transparent 70%);
+    animation-delay: -10s;
+}
 
-        if (!subjectsObj || Object.keys(subjectsObj).length === 0) {
-            container.innerHTML = '<div class="subject-item"><span class="subject-name" style="color: #94a3b8; font-style: italic;">Aucun résultat trouvé pour ce semestre.</span></div>';
-            avgEl.textContent = '--';
-            avgEl.style.color = 'inherit';
-            return;
-        }
+@keyframes float {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(5%, 10%) scale(1.1); }
+}
 
-        // Set Average
-        avgEl.textContent = average || '--';
-        if (average && !isNaN(parseFloat(average))) {
-            avgEl.style.color = calculateGradeColor(average);
-        } else {
-            avgEl.style.color = 'inherit';
-        }
+/* Layout Container */
+.app-container {
+    width: 100%;
+    max-width: 1000px;
+    padding: 3rem 1.5rem;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+}
 
-        // Render Subjects
-        for (const [name, grade] of Object.entries(subjectsObj)) {
-            const item = document.createElement('div');
-            item.className = 'subject-item';
+/* Header */
+.app-header {
+    text-align: center;
+    margin-bottom: 1rem;
+    animation: slideDown 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
 
-            const nameSpan = document.createElement('span');
-            nameSpan.className = 'subject-name';
-            nameSpan.textContent = name.replace(/\uFFFD/g, 'e');
+.logo-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
 
-            const gradeSpan = document.createElement('span');
-            gradeSpan.className = 'subject-grade';
-            gradeSpan.textContent = grade;
-            gradeSpan.style.color = calculateGradeColor(grade);
+.master-logo {
+    max-height: 80px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
 
-            // Add a print-only text version of the color logic if needed, but we will handle print color via CSS overrides
-            gradeSpan.setAttribute('data-print-grade', grade);
+.app-header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.2;
+    margin-bottom: 0.5rem;
+}
 
-            item.appendChild(nameSpan);
-            item.appendChild(gradeSpan);
-            container.appendChild(item);
-        }
-    };
+.subtitle {
+    color: var(--primary);
+    font-weight: 600;
+    font-size: 1.1rem;
+    letter-spacing: 1px;
+}
 
-    // Function to parse S1
-    const parseS1 = () => {
-        if (typeof dataS1 !== 'undefined' && dataS1.length > 2) {
-            const headers = dataS1[0];
-            const moyRow = dataS1[2];
+/* Search Section */
+.search-section {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    animation: fadeIn 1s ease-out 0.3s both;
+}
 
-            // Parse MOYENNE for S1
-            if (moyRow && (moyRow.H1 === "MOYENNE" || moyRow.NUMERO === "MOYENNE")) {
-                for (const key of Object.keys(moyRow)) {
-                    if (key !== 'H1' && key !== 'H2' && key !== 'H3' && headers[key]) {
-                        const grade = parseFloat(moyRow[key].replace(',', '.'));
-                        if (!isNaN(grade)) classAverages.s1[headers[key]] = grade;
-                    }
-                }
-            }
+.search-bar {
+    display: flex;
+    align-items: center;
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 99px;
+    padding: 0.5rem 0.5rem 0.5rem 1.5rem;
+    box-shadow: var(--glass-shadow);
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
 
-            // Skip index 0 (headers), 1 (MAX), 2 (MOYENNE)
-            for (let i = 3; i < dataS1.length; i++) {
-                const row = dataS1[i];
-                const apogee = row.H1 ? row.H1.toString().trim() : "";
-                if (!apogee) continue;
+.search-bar:focus-within {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(31, 38, 135, 0.15);
+    border-color: rgba(37, 99, 235, 0.4);
+}
 
-                const firstName = row.H2 ? row.H2.trim() : "";
-                const lastName = row.H3 ? row.H3.trim() : "";
+.search-icon {
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
 
-                // Extract subjects
-                const subjects = {};
-                let sum = 0;
-                let count = 0;
+#searchInput {
+    flex-grow: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-main);
+    font-size: 1.1rem;
+    font-family: inherit;
+    padding: 0.75rem 1rem;
+    outline: none;
+}
 
-                for (const key of Object.keys(row)) {
-                    if (key !== 'H1' && key !== 'H2' && key !== 'H3' && headers[key]) {
-                        let grade = row[key].trim();
-                        const numGrade = parseFloat(grade.replace(',', '.'));
-                        if (!isNaN(numGrade)) {
-                            grade = numGrade.toFixed(2);
-                            sum += numGrade;
-                            count++;
-                        }
-                        subjects[headers[key]] = grade;
-                    }
-                }
+#searchInput::placeholder {
+    color: #94a3b8;
+}
 
-                const moyenne = count > 0 ? (sum / count).toFixed(2) : "";
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: white;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: 99px;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.2);
+}
 
-                if (!students.has(apogee)) {
-                    students.set(apogee, { apogee, firstName, lastName, s1: {}, s2: {}, s3: {} });
-                }
+.btn-icon {
+    display: none;
+}
 
-                const student = students.get(apogee);
-                // Only update name if empty
-                if (!student.firstName) student.firstName = firstName;
-                if (!student.lastName) student.lastName = lastName;
+.btn-text {
+    display: inline;
+}
 
-                student.s1 = { subjects, moyenne };
-            }
-        }
-    };
+.btn-primary:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3);
+}
 
-    // Function to parse S2 and S3
-    const parseStandard = (dataArray, semesterKey) => {
-        if (!dataArray || dataArray.length === 0) return;
+.btn-primary:active {
+    transform: scale(0.98);
+}
 
-        // Parse MOYENNE
-        const moyRow = dataArray.find(row => row["CODE APOGEE"] === "MOYENNE" || row["NUMERO"] === "MOYENNE");
-        if (moyRow) {
-            for (const [key, value] of Object.entries(moyRow)) {
-                if (key !== "CODE APOGEE" && key !== "First Name " && key !== "Last Name " && key !== "Moyennes" && key !== "NUMERO") {
-                    if (key && key.trim() !== "") {
-                        const grade = parseFloat((value || "").toString().replace(',', '.'));
-                        if (!isNaN(grade)) classAverages[semesterKey][key] = grade;
-                    }
-                }
-            }
-        }
+.error-message {
+    text-align: center;
+    color: #ef4444;
+    margin-top: 1rem;
+    min-height: 1.5rem;
+    font-weight: 500;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
 
-        for (let i = 0; i < dataArray.length; i++) {
-            const row = dataArray[i];
-            const apogee = row["CODE APOGEE"] ? row["CODE APOGEE"].toString().trim() : "";
+/* Actions Bar */
+.actions-bar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: -1rem;
+}
 
-            // Skip metadata rows and empty rows
-            if (!apogee || apogee === "MAX" || apogee === "MOYENNE") continue;
+.btn-secondary {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: white;
+    color: var(--text-main);
+    border: 1px solid #cbd5e1;
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
 
-            const firstName = row["First Name "] ? row["First Name "].trim() : "";
-            const lastName = row["Last Name "] ? row["Last Name "].trim() : "";
-            let moyenne = row["Moyennes"] ? row["Moyennes"].toString().trim() : "";
-            const numMoy = parseFloat(moyenne.replace(',', '.'));
-            if (!isNaN(numMoy)) {
-                moyenne = numMoy.toFixed(2);
-            }
+.btn-secondary:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+    transform: translateY(-1px);
+}
 
-            const subjects = {};
-            for (const [key, value] of Object.entries(row)) {
-                if (key !== "CODE APOGEE" && key !== "First Name " && key !== "Last Name " && key !== "Moyennes" && key !== "NUMERO") {
-                    if (key && key.trim() !== "") {
-                        let grade = value ? value.toString().trim() : "";
-                        const numGrade = parseFloat(grade.replace(',', '.'));
-                        if (!isNaN(numGrade)) {
-                            grade = numGrade.toFixed(2);
-                        }
-                        subjects[key] = grade;
-                    }
-                }
-            }
+/* Glass Card Global Styles */
+.glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    box-shadow: var(--glass-shadow);
+    padding: 2rem;
+}
 
-            if (!students.has(apogee)) {
-                students.set(apogee, { apogee, firstName, lastName, s1: {}, s2: {}, s3: {} });
-            }
+/* Leaderboard Container */
+.leaderboard-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    transition: opacity 0.5s ease;
+}
 
-            const student = students.get(apogee);
-            if (!student.firstName) student.firstName = firstName;
-            if (!student.lastName) student.lastName = lastName;
+.leaderboard-container.hidden {
+    display: none;
+    opacity: 0;
+}
 
-            student[semesterKey] = { subjects, moyenne };
-        }
-    };
+.leaderboard-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-height: 500px;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+}
 
-    // Initialize Data Parsing
-    try {
-        if (typeof dataS1 !== 'undefined') parseS1();
-        if (typeof dataS2 !== 'undefined') parseStandard(dataS2, 's2');
-        if (typeof dataS3 !== 'undefined') parseStandard(dataS3, 's3');
-    } catch (e) {
-        console.error("Error parsing data", e);
+/* Custom Scrollbar for Leaderboard */
+.leaderboard-list::-webkit-scrollbar {
+    width: 6px;
+}
+.leaderboard-list::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.02);
+    border-radius: 10px;
+}
+.leaderboard-list::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,0.1);
+    border-radius: 10px;
+}
+
+.leaderboard-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1.25rem;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.leaderboard-item:hover {
+    background: white;
+    transform: translateX(5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+.leaderboard-rank {
+    font-size: 1.2rem;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    width: 30px;
+    color: var(--text-muted);
+}
+
+.leaderboard-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: #475569;
+    margin-right: 1rem;
+}
+
+.leaderboard-name {
+    flex-grow: 1;
+    font-weight: 600;
+    color: #1e293b;
+    text-transform: capitalize;
+}
+
+.leaderboard-avg {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+/* Top 3 Styling */
+.rank-1 .leaderboard-rank { color: #fbbf24; }
+.rank-1 .leaderboard-avatar { background: #fef3c7; color: #d97706; border: 1px solid #fde68a; }
+.rank-1 { border-color: #fde68a; background: linear-gradient(90deg, rgba(254,243,199,0.5) 0%, rgba(255,255,255,0.5) 100%); }
+
+.rank-2 .leaderboard-rank { color: #94a3b8; }
+.rank-2 .leaderboard-avatar { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+
+.rank-3 .leaderboard-rank { color: #b45309; }
+.rank-3 .leaderboard-avatar { background: #ffedd5; color: #9a3412; border: 1px solid #fed7aa; }
+
+/* Results Container */
+.results-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    transition: opacity 0.5s ease;
+}
+
+.results-container.hidden {
+    display: none;
+    opacity: 0;
+}
+
+/* Student Profile */
+.student-profile {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    animation: slideUp 0.6s ease-out forwards;
+}
+
+.profile-avatar {
+    width: 70px;
+    height: 70px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    color: white;
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
+}
+
+.profile-details {
+    flex-grow: 1;
+}
+
+#studentName {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+    text-transform: capitalize;
+    color: #0f172a;
+}
+
+.student-id {
+    color: var(--text-muted);
+    font-size: 1rem;
+    font-family: monospace;
+    background: rgba(0, 0, 0, 0.04);
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+    display: inline-block;
+}
+
+.global-average {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.average-label {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+}
+
+.average-value {
+    font-size: 2.5rem;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    /* Color set inline by JS */
+}
+
+/* Chart Section */
+.chart-section {
+    margin-bottom: 1.5rem;
+    display: none; /* Hidden until search */
+}
+
+.chart-header-wrapper {
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding-bottom: 1rem;
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.compare-section {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: rgba(255, 255, 255, 0.6);
+    padding: 0.5rem 1rem;
+    border-radius: 12px;
+}
+
+.compare-section label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #475569;
+}
+
+.compare-select {
+    flex-grow: 1;
+    padding: 0.4rem 0.75rem;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    background: white;
+    font-family: 'Inter', sans-serif;
+    color: #1e293b;
+    font-size: 0.95rem;
+    outline: none;
+    cursor: pointer;
+}
+
+.chart-header h3 {
+    font-size: 1.3rem;
+    color: #1e293b;
+}
+
+.chart-toggles {
+    display: flex;
+    gap: 0.5rem;
+    background: rgba(0, 0, 0, 0.04);
+    padding: 0.25rem;
+    border-radius: 12px;
+}
+
+.toggle-btn {
+    background: transparent;
+    border: none;
+    padding: 0.4rem 1rem;
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.toggle-btn:hover {
+    color: var(--text-main);
+}
+
+.toggle-btn.active {
+    background: white;
+    color: var(--primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.chart-container {
+    position: relative;
+    height: 400px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+/* Semesters Grid */
+.semesters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+/* Individual Semester Card */
+.semester-card {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.semester-card:hover {
+    transform: translateY(-5px);
+    border-color: rgba(255, 255, 255, 1);
+    box-shadow: 0 12px 40px rgba(31, 38, 135, 0.15);
+}
+
+.fade-in {
+    opacity: 0;
+    animation: fadeInCard 0.6s ease-out forwards;
+    animation-delay: calc(var(--animation-order) * 0.15s + 0.3s);
+}
+
+.semester-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding-bottom: 1rem;
+}
+
+.semester-header h3 {
+    font-size: 1.3rem;
+    color: #1e293b;
+}
+
+.semester-average {
+    font-size: 1.2rem;
+    font-weight: 700;
+    font-family: 'Outfit', sans-serif;
+    background: rgba(0, 0, 0, 0.03);
+    padding: 0.3rem 0.8rem;
+    border-radius: 8px;
+    /* Color set inline by JS */
+}
+
+/* Subject Item */
+.subjects-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.subject-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: 12px;
+    transition: background 0.2s ease;
+}
+
+.subject-item:hover {
+    background: rgba(255, 255, 255, 0.8);
+}
+
+.subject-name {
+    font-size: 0.95rem;
+    color: #334155;
+    font-weight: 500;
+    line-height: 1.3;
+    padding-right: 1rem;
+}
+
+.subject-grade {
+    font-weight: 700;
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.1rem;
+    min-width: 45px;
+    text-align: right;
+    /* Color set inline by JS */
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .app-container {
+        padding: 2rem 0.5rem 0.5rem 0.5rem;
+        gap: 1rem;
     }
 
-    // Convert Map to Array for searching
-    const studentsList = Array.from(students.values());
-
-    // Populate the compare select dropdown
-    const compareSelect = document.getElementById('compareSelect');
-    if (compareSelect) {
-        const sorted = [...studentsList].sort((a, b) => (a.lastName || "").localeCompare(b.lastName || ""));
-        sorted.forEach(s => {
-            if (s.lastName && s.firstName) {
-                const opt = document.createElement('option');
-                opt.value = s.apogee;
-                opt.textContent = `${s.lastName} ${s.firstName}`;
-                compareSelect.appendChild(opt);
-            }
-        });
+    .glass-card {
+        padding: 1rem;
+        border-radius: 16px;
     }
 
-    // Helper for string normalization (removes accents, spaces, lowercase)
-    const normalizeString = (str) => {
-        if (!str) return "";
-        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, "");
-    };
+    .app-header h1 { font-size: 1.4rem; }
+    .subtitle { font-size: 0.85rem; }
+    
+    .student-profile {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+    
+    .global-average {
+        align-items: center;
+        border-left: none;
+        border-top: 1px solid rgba(0,0,0,0.1);
+        padding-left: 0;
+        padding-top: 1rem;
+        width: 100%;
+    }
+    
+    .search-bar {
+        flex-direction: column;
+        border-radius: 16px;
+        padding: 0.75rem;
+        gap: 0.75rem;
+    }
+    
+    .search-icon { display: none; }
+    
+    .btn-primary {
+        padding: 0.8rem 1.2rem;
+        width: 100%;
+        border-radius: 100px !important;
+        height: auto;
+    }
+    
+    .btn-text { display: inline; }
+    .btn-icon { display: none; }
+    
+    #searchInput {
+        width: 100%;
+        text-align: center;
+        padding: 0.5rem;
+        font-size: 1rem;
+    }
 
-    // Levenshtein distance for fuzzy matching
-    const levenshtein = (a, b) => {
-        if (a.length === 0) return b.length;
-        if (b.length === 0) return a.length;
-        const matrix = [];
-        for (let i = 0; i <= b.length; i++) { matrix[i] = [i]; }
-        for (let j = 0; j <= a.length; j++) { matrix[0][j] = j; }
-        for (let i = 1; i <= b.length; i++) {
-            for (let j = 1; j <= a.length; j++) {
-                if (b.charAt(i - 1) === a.charAt(j - 1)) {
-                    matrix[i][j] = matrix[i - 1][j - 1];
-                } else {
-                    matrix[i][j] = Math.min(
-                        matrix[i - 1][j - 1] + 1, // substitution
-                        Math.min(matrix[i][j - 1] + 1, // insertion
-                        matrix[i - 1][j] + 1)); // deletion
-                }
-            }
-        }
-        return matrix[b.length][a.length];
-    };
+    .chart-header {
+        flex-direction: column;
+        gap: 0.75rem;
+        align-items: center;
+    }
 
-    // Fuzzy match logic
-    const isFuzzyMatch = (student, query) => {
-        const normQuery = normalizeString(query);
-        if (!normQuery) return false;
-        
-        // Exact Apogee match
-        if (student.apogee === query.trim()) return true;
+    .chart-container {
+        height: 280px; /* Smaller chart for mobile */
+    }
+    
+    .compare-section {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+        width: 100%;
+    }
 
-        const first = normalizeString(student.firstName);
-        const last = normalizeString(student.lastName);
-        const full1 = first + last;
-        const full2 = last + first;
+    .compare-select {
+        font-size: 0.85rem;
+        padding: 0.3rem;
+    }
+    
+    .leaderboard-item {
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .leaderboard-name {
+        font-size: 0.85rem;
+    }
+    
+    .leaderboard-avatar {
+        width: 30px;
+        height: 30px;
+        font-size: 0.7rem;
+        margin-right: 0.5rem;
+    }
+    
+    .leaderboard-rank {
+        width: 20px;
+        font-size: 0.9rem;
+    }
 
-        // Substring match
-        if (full1.includes(normQuery) || full2.includes(normQuery)) return true;
+    .semesters-grid {
+        grid-template-columns: 1fr;
+    }
+}
 
-        // Fuzzy match on individual names if query is at least 3 chars
-        if (normQuery.length >= 3) {
-            // Allow 1 typo for words of length 3-4, 2 typos for 5+
-            const tolerance = normQuery.length >= 5 ? 2 : 1;
-            if (levenshtein(last, normQuery) <= tolerance) return true;
-            if (levenshtein(first, normQuery) <= tolerance) return true;
-        }
+/* Print Styles - Formal Document */
+@media print {
+    @page {
+        size: A4;
+        margin: 1cm;
+    }
+    
+    body {
+        background: white;
+        color: black !important;
+        font-family: 'Inter', serif;
+        font-size: 11px;
+        line-height: 1.2;
+    }
+    
+    .background-elements, .no-print, .search-section {
+        display: none !important;
+    }
+    
+    .app-container {
+        max-width: 100%;
+        padding: 0;
+        gap: 0.5rem;
+    }
 
-        return false;
-    };
+    /* Formal Header */
+    .app-header {
+        border-bottom: 1px solid black;
+        padding-bottom: 0.5rem;
+        margin-bottom: 0.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .logo-container {
+        margin-bottom: 0.2rem;
+    }
 
-    // Dynamic Suggestions
-    searchInput.addEventListener('input', (e) => {
-        const query = e.target.value.trim();
-        studentsListEl.innerHTML = ''; // Clear previous suggestions
+    .master-logo {
+        max-height: 45px;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+    }
 
-        if (query.length < 2) return; // Don't suggest for empty or 1 letter
+    .app-header h1 {
+        font-size: 14px;
+        color: black !important;
+        margin-bottom: 0.1rem;
+        text-transform: uppercase;
+    }
+    
+    .subtitle {
+        color: black !important;
+        font-weight: normal;
+        font-size: 11px;
+    }
 
-        const isNumberQuery = /^\d/.test(query);
+    /* Student Profile Header */
+    .glass-card {
+        background: none !important;
+        backdrop-filter: none !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        color: black !important;
+    }
+    
+    .student-profile {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border: 1px solid black;
+        border-radius: 0 !important;
+        padding: 0.4rem 0.8rem !important;
+        margin-bottom: 0.5rem;
+    }
 
-        if (isNumberQuery) {
-            // Suggest Apogée codes
-            const matches = studentsList.filter(s => s.apogee.startsWith(query));
-            matches.slice(0, 5).forEach(student => {
-                const option = document.createElement('option');
-                option.value = student.apogee;
-                studentsListEl.appendChild(option);
-            });
-        } else {
-            // Suggest Names
-            const matches = studentsList.filter(s => isFuzzyMatch(s, query));
-            matches.slice(0, 5).forEach(student => {
-                const option = document.createElement('option');
-                option.value = `${student.lastName} ${student.firstName}`;
-                studentsListEl.appendChild(option);
-            });
-        }
-    });
+    .profile-avatar {
+        display: none !important;
+    }
+    
+    #studentName {
+        color: black !important;
+        font-size: 13px;
+        margin: 0;
+    }
 
-    // Helper to calculate Global Average
-    const getGlobalAverage = (student) => {
-        let totalAvg = 0;
-        let avgCount = 0;
-        if (student.s1?.moyenne && !isNaN(parseFloat(student.s1.moyenne))) { totalAvg += parseFloat(student.s1.moyenne); avgCount++; }
-        if (student.s2?.moyenne && !isNaN(parseFloat(student.s2.moyenne))) { totalAvg += parseFloat(student.s2.moyenne); avgCount++; }
-        if (student.s3?.moyenne && !isNaN(parseFloat(student.s3.moyenne))) { totalAvg += parseFloat(student.s3.moyenne); avgCount++; }
+    .student-id {
+        background: none !important;
+        color: black !important;
+        padding: 0 !important;
+        font-size: 11px;
+    }
 
-        const fullNameLower = `${student.firstName} ${student.lastName}`.toLowerCase();
-        const isExcluded = (fullNameLower.includes('asmae') && fullNameLower.includes('karnaoui')) ||
-            (fullNameLower.includes('nouhaila') && fullNameLower.includes('boulekhrif'));
+    .global-average {
+        border-left: 1px solid black;
+        padding-left: 0.8rem;
+    }
 
-        if (isExcluded) return -1; // Excluded
+    .average-label {
+        font-size: 10px;
+        margin: 0;
+    }
 
-        if (avgCount > 0) {
-            return parseFloat((totalAvg / avgCount).toFixed(2));
-        }
-        return 0;
-    };
+    .average-value {
+        color: black !important;
+        font-size: 14px;
+    }
+    
+    /* Semesters Grid - Compact Column */
+    .semesters-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+    }
 
-    // Helper to Display a Student
-    const displayStudent = (student) => {
-        currentStudent = student;
-        errorMessage.style.opacity = '0';
-        
-        const leaderboardContainer = document.getElementById('leaderboardContainer');
-        if (leaderboardContainer) leaderboardContainer.classList.add('hidden');
+    .semester-card {
+        border: 1px solid black !important;
+        border-radius: 0 !important;
+        padding: 0 !important;
+        break-inside: avoid;
+        margin-bottom: 0.3rem;
+        gap: 0 !important;
+    }
+    
+    .semester-header {
+        background: #f1f5f9 !important;
+        border-bottom: 1px solid black !important;
+        padding: 0.2rem 0.5rem !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    
+    .semester-header h3 {
+        color: black !important;
+        font-size: 12px;
+        margin: 0;
+        text-transform: uppercase;
+    }
 
-        // Display results
-        const displayName = `${student.lastName} ${student.firstName}`;
-        studentNameEl.textContent = displayName;
-        studentApogeeEl.textContent = student.apogee;
-        const firstInit = student.firstName ? student.firstName.trim().charAt(0).toUpperCase() : '';
-        const lastInit = student.lastName ? student.lastName.trim().charAt(0).toUpperCase() : '';
-        profileAvatarEl.textContent = `${firstInit}${lastInit}` || 'E';
+    .semester-average {
+        background: none !important;
+        color: black !important;
+        padding: 0 !important;
+        font-size: 12px;
+    }
 
-        // Update document title for PDF saving
-        document.title = `Relevé de Notes - ${displayName.toUpperCase()}`;
+    .subjects-list {
+        display: table;
+        width: 100%;
+        border-collapse: collapse;
+        gap: 0;
+    }
+    
+    .subject-item {
+        display: table-row;
+        background: none !important;
+        border-radius: 0 !important;
+        padding: 0 !important;
+        border-bottom: 1px solid black !important;
+    }
 
-        // Update Report Button Mailto Link
-        const reportButton = document.getElementById('reportButton');
-        if (reportButton) {
-            const emailAddress = "Anas.Bouayadi@ump.ac.ma";
-            const emailSubject = encodeURIComponent(`Erreur de notes - ${displayName}`);
-            const emailBody = encodeURIComponent(`Bonjour,\n\nJ'ai constaté une erreur dans mon relevé de notes.\n\nNom: ${displayName}\nCode Apogée: ${student.apogee}\n\nMerci de corriger l'erreur suivante :\n\n`);
-            reportButton.href = `mailto:${emailAddress}?subject=${emailSubject}&body=${emailBody}`;
-        }
+    .subject-item:last-child {
+        border-bottom: none !important;
+    }
+    
+    .subject-name {
+        display: table-cell;
+        color: black !important;
+        padding: 0.2rem 0.5rem !important;
+        border-right: 1px solid black !important;
+        font-size: 11px;
+    }
+    
+    .subject-grade {
+        display: table-cell;
+        color: black !important;
+        padding: 0.2rem 0.5rem !important;
+        text-align: center;
+        width: 80px;
+        font-size: 11px;
+        font-weight: bold;
+    }
+}
 
-        // Render Semesters
-        renderSubjects('s1Subjects', student.s1?.subjects || {}, student.s1?.moyenne);
-        renderSubjects('s2Subjects', student.s2?.subjects || {}, student.s2?.moyenne);
-        renderSubjects('s3Subjects', student.s3?.subjects || {}, student.s3?.moyenne);
+/* Animations */
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 
-        // Calculate Global Average
-        const globalAvgNum = getGlobalAverage(student);
-        globalAverageEl.style.fontSize = ''; // Reset font size in case it was changed
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 
-        if (globalAvgNum === -1) {
-            globalAverageEl.textContent = 'EXCLU';
-            globalAverageEl.style.color = '#ef4444'; // Red color
-            globalAverageEl.style.fontSize = '1.8rem';
-        } else if (globalAvgNum > 0) {
-            const globalStr = globalAvgNum.toFixed(2);
-            globalAverageEl.textContent = globalStr;
-            globalAverageEl.style.color = calculateGradeColor(globalStr);
-        } else {
-            globalAverageEl.textContent = '--';
-            globalAverageEl.style.color = 'inherit';
-        }
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
 
-        // Show container
-        resultsContainer.classList.remove('hidden');
-        
-        // Update Chart
-        updateChart();
-
-        // Retrigger animations
-        const cards = document.querySelectorAll('.fade-in');
-        cards.forEach(card => {
-            card.style.animation = 'none';
-            card.offsetHeight; // trigger reflow
-            card.style.animation = null;
-        });
-    };
-
-    // Render Leaderboard
-    const renderLeaderboard = () => {
-        const leaderboardContainer = document.getElementById('leaderboardContainer');
-        const leaderboardList = document.getElementById('leaderboardList');
-        
-        resultsContainer.classList.add('hidden');
-        errorMessage.style.opacity = '0';
-        leaderboardContainer.classList.remove('hidden');
-
-        // Calculate averages and sort
-        const rankedStudents = studentsList.map(s => {
-            return {
-                ...s,
-                globalAvgNum: getGlobalAverage(s)
-            };
-        }).filter(s => s.globalAvgNum > 0)
-        .sort((a, b) => b.globalAvgNum - a.globalAvgNum);
-
-        leaderboardList.innerHTML = '';
-
-        rankedStudents.forEach((student, index) => {
-            const rank = index + 1;
-            const item = document.createElement('div');
-            item.className = `leaderboard-item fade-in rank-${rank <= 3 ? rank : 'other'}`;
-            item.style.setProperty('--animation-order', (index * 0.05).toString());
-
-            const rankEl = document.createElement('div');
-            rankEl.className = 'leaderboard-rank';
-            rankEl.textContent = rank;
-
-            const avatarEl = document.createElement('div');
-            avatarEl.className = 'leaderboard-avatar';
-            const firstInit = student.firstName ? student.firstName.trim().charAt(0).toUpperCase() : '';
-            const lastInit = student.lastName ? student.lastName.trim().charAt(0).toUpperCase() : '';
-            avatarEl.textContent = `${firstInit}${lastInit}` || 'E';
-
-            const nameEl = document.createElement('div');
-            nameEl.className = 'leaderboard-name';
-            nameEl.textContent = `${student.lastName} ${student.firstName}`;
-
-            const avgEl = document.createElement('div');
-            avgEl.className = 'leaderboard-avg';
-            avgEl.textContent = student.globalAvgNum.toFixed(2);
-            avgEl.style.color = calculateGradeColor(student.globalAvgNum.toString());
-
-            item.appendChild(rankEl);
-            item.appendChild(avatarEl);
-            item.appendChild(nameEl);
-            item.appendChild(avgEl);
-
-            item.addEventListener('click', () => {
-                displayStudent(student);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            });
-
-            leaderboardList.appendChild(item);
-        });
-    };
-
-    // Search Logic
-    const handleSearch = () => {
-        const query = searchInput.value.trim();
-
-        if (!query) {
-            errorMessage.textContent = 'Veuillez entrer un Nom ou un Code Apogée.';
-            errorMessage.style.opacity = '1';
-            resultsContainer.classList.add('hidden');
-            return;
-        }
-
-        const student = studentsList.find(s => isFuzzyMatch(s, query));
-
-        if (!student) {
-            errorMessage.textContent = 'Étudiant introuvable. Veuillez vérifier le nom ou le code.';
-            errorMessage.style.opacity = '1';
-            resultsContainer.classList.add('hidden');
-            return;
-        }
-
-        displayStudent(student);
-    };
-
-    // Chart Update Logic
-    const updateChart = () => {
-        if (!currentStudent) return;
-
-        const chartSection = document.getElementById('chartSection');
-        chartSection.style.display = 'block'; // Show chart
-
-        let studentSubjects = {};
-        let compareSubjects = {};
-        let compareLabel = 'Moyenne Classe';
-        const compareValue = document.getElementById('compareSelect')?.value || 'average';
-
-        if (activeSemesterChart === 's1') {
-            studentSubjects = currentStudent.s1?.subjects || {};
-        } else if (activeSemesterChart === 's2') {
-            studentSubjects = currentStudent.s2?.subjects || {};
-        } else if (activeSemesterChart === 's3') {
-            studentSubjects = currentStudent.s3?.subjects || {};
-        }
-
-        if (compareValue === 'average') {
-            if (activeSemesterChart === 's1') compareSubjects = classAverages.s1 || {};
-            else if (activeSemesterChart === 's2') compareSubjects = classAverages.s2 || {};
-            else if (activeSemesterChart === 's3') compareSubjects = classAverages.s3 || {};
-        } else {
-            const compareStudent = studentsList.find(s => s.apogee === compareValue);
-            if (compareStudent) {
-                compareLabel = `${compareStudent.lastName} ${compareStudent.firstName}`;
-                if (activeSemesterChart === 's1') compareSubjects = compareStudent.s1?.subjects || {};
-                else if (activeSemesterChart === 's2') compareSubjects = compareStudent.s2?.subjects || {};
-                else if (activeSemesterChart === 's3') compareSubjects = compareStudent.s3?.subjects || {};
-            }
-        }
-
-        const labels = Object.keys(studentSubjects).map(l => l.replace(/\uFFFD/g, 'e').substring(0, 20) + (l.length > 20 ? '...' : ''));
-        const studentData = Object.values(studentSubjects).map(val => parseFloat(val) || 0);
-        const avgData = Object.keys(studentSubjects).map(key => parseFloat(compareSubjects[key]) || null);
-
-        // If no subjects, hide the chart
-        if (labels.length === 0) {
-            if (radarChartInstance) radarChartInstance.destroy();
-            return;
-        }
-
-        const ctx = document.getElementById('radarChart').getContext('2d');
-
-        if (radarChartInstance) {
-            radarChartInstance.destroy();
-        }
-
-        radarChartInstance = new Chart(ctx, {
-            type: 'radar',
-            data: {
-                labels: labels,
-                datasets: [
-                    {
-                        label: 'Vos Notes',
-                        data: studentData,
-                        backgroundColor: 'rgba(37, 99, 235, 0.2)', // Primary blue
-                        borderColor: 'rgba(37, 99, 235, 1)',
-                        pointBackgroundColor: 'rgba(37, 99, 235, 1)',
-                        pointBorderColor: '#fff',
-                        pointHoverBackgroundColor: '#fff',
-                        pointHoverBorderColor: 'rgba(37, 99, 235, 1)',
-                        borderWidth: 2,
-                    },
-                    {
-                        label: compareLabel,
-                        data: avgData,
-                        backgroundColor: 'rgba(239, 68, 68, 0.1)', // Muted red
-                        borderColor: 'rgba(239, 68, 68, 0.8)',
-                        pointBackgroundColor: 'rgba(239, 68, 68, 1)',
-                        pointBorderColor: '#fff',
-                        pointHoverBackgroundColor: '#fff',
-                        pointHoverBorderColor: 'rgba(239, 68, 68, 1)',
-                        borderWidth: 2,
-                        borderDash: [5, 5]
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    r: {
-                        min: 0,
-                        max: 20,
-                        angleLines: { color: 'rgba(0,0,0,0.1)' },
-                        grid: { color: 'rgba(0,0,0,0.1)' },
-                        pointLabels: {
-                            font: { family: "'Inter', sans-serif", size: window.innerWidth < 768 ? 9 : 11 },
-                            color: '#475569',
-                            callback: function(label) {
-                                if (window.innerWidth < 768 && label.length > 10) {
-                                    return label.substring(0, 10) + '...';
-                                }
-                                return label;
-                            }
-                        },
-                        ticks: {
-                            stepSize: 4,
-                            backdropColor: 'transparent',
-                            color: '#94a3b8'
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { font: { family: "'Outfit', sans-serif" }, usePointStyle: true }
-                    },
-                    tooltip: {
-                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                        titleFont: { family: "'Outfit', sans-serif" },
-                        bodyFont: { family: "'Inter', sans-serif" },
-                        padding: 10,
-                        cornerRadius: 8
-                    }
-                }
-            }
-        });
-    };
-
-    // Toggle Buttons Logic
-    document.querySelectorAll('.toggle-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
-            e.target.classList.add('active');
-            activeSemesterChart = e.target.getAttribute('data-semester');
-            updateChart();
-        });
-    });
-
-    const compareSelectEl = document.getElementById('compareSelect');
-    if (compareSelectEl) compareSelectEl.addEventListener('change', updateChart);
-
-    document.getElementById('leaderboardBtn').addEventListener('click', renderLeaderboard);
-    document.getElementById('closeLeaderboardBtn').addEventListener('click', () => {
-        document.getElementById('leaderboardContainer').classList.add('hidden');
-    });
-
-    searchButton.addEventListener('click', handleSearch);
-    searchInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') handleSearch();
-    });
-
-    printButton.addEventListener('click', () => {
-        window.print();
-    });
-});
+@keyframes fadeInCard {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}

@@ -3,7 +3,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchButton = document.getElementById('searchButton');
     const errorMessage = document.getElementById('errorMessage');
     const resultsContainer = document.getElementById('resultsContainer');
-    const studentsListEl = document.getElementById('studentsList');
+    const clearSearchBtn = document.getElementById('clearSearchBtn');
+    const suggestionsContainer = document.getElementById('suggestionsContainer');
     const printButton = document.getElementById('printButton');
 
     // UI Elements
@@ -18,6 +19,35 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentStudent = null;
     let radarChartInstance = null;
     let activeSemesterChart = 's1';
+
+    // Safe string parsing helpers
+    const safeString = (val) => {
+        if (val === null || val === undefined) return "";
+        return val.toString();
+    };
+
+    const safeTrim = (val) => {
+        return safeString(val).trim();
+    };
+
+    const safeReplace = (val, search, replaceWith) => {
+        return safeString(val).replace(search, replaceWith);
+    };
+
+    const cleanTextEncoding = (str) => {
+        if (str === null || str === undefined) return "";
+        let cleaned = str.toString();
+        // Replace unicode replacement char
+        cleaned = cleaned.replace(/\uFFFD/g, 'e');
+        
+        // Clean typical French typography encoding issues
+        cleaned = cleaned.replace(/Systémes/g, 'Systèmes');
+        cleaned = cleaned.replace(/Etrangéres/g, 'Étrangères');
+        cleaned = cleaned.replace(/Financiére/g, 'Financière');
+        cleaned = cleaned.replace(/donnes/g, 'données');
+        cleaned = cleaned.replace(/Fiscalite/g, 'Fiscalité');
+        return cleaned;
+    };
 
     // Helper to calculate dynamic grade color (Red to Green)
     const calculateGradeColor = (gradeStr) => {
@@ -70,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const nameSpan = document.createElement('span');
             nameSpan.className = 'subject-name';
-            nameSpan.textContent = name.replace(/\uFFFD/g, 'e');
+            nameSpan.textContent = cleanTextEncoding(name);
 
             const gradeSpan = document.createElement('span');
             gradeSpan.className = 'subject-grade';
@@ -96,7 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (moyRow && (moyRow.H1 === "MOYENNE" || moyRow.NUMERO === "MOYENNE")) {
                 for (const key of Object.keys(moyRow)) {
                     if (key !== 'H1' && key !== 'H2' && key !== 'H3' && headers[key]) {
-                        const grade = parseFloat(moyRow[key].replace(',', '.'));
+                        const grade = parseFloat(safeReplace(moyRow[key], ',', '.'));
                         if (!isNaN(grade)) classAverages.s1[headers[key]] = grade;
                     }
                 }
@@ -105,11 +135,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // Skip index 0 (headers), 1 (MAX), 2 (MOYENNE)
             for (let i = 3; i < dataS1.length; i++) {
                 const row = dataS1[i];
-                const apogee = row.H1 ? row.H1.toString().trim() : "";
+                const apogee = safeTrim(row.H1);
                 if (!apogee) continue;
 
-                const firstName = row.H2 ? row.H2.trim() : "";
-                const lastName = row.H3 ? row.H3.trim() : "";
+                const firstName = safeTrim(row.H2);
+                const lastName = safeTrim(row.H3);
 
                 // Extract subjects
                 const subjects = {};
@@ -118,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 for (const key of Object.keys(row)) {
                     if (key !== 'H1' && key !== 'H2' && key !== 'H3' && headers[key]) {
-                        let grade = row[key].trim();
+                        let grade = safeTrim(row[key]);
                         const numGrade = parseFloat(grade.replace(',', '.'));
                         if (!isNaN(numGrade)) {
                             grade = numGrade.toFixed(2);
@@ -150,12 +180,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!dataArray || dataArray.length === 0) return;
 
         // Parse MOYENNE
-        const moyRow = dataArray.find(row => row["CODE APOGEE"] === "MOYENNE" || row["NUMERO"] === "MOYENNE");
+        const moyRow = dataArray.find(row => safeTrim(row["CODE APOGEE"]) === "MOYENNE" || safeTrim(row["NUMERO"]) === "MOYENNE");
         if (moyRow) {
             for (const [key, value] of Object.entries(moyRow)) {
                 if (key !== "CODE APOGEE" && key !== "First Name " && key !== "Last Name " && key !== "Moyennes" && key !== "NUMERO") {
                     if (key && key.trim() !== "") {
-                        const grade = parseFloat((value || "").toString().replace(',', '.'));
+                        const grade = parseFloat(safeReplace(value, ',', '.'));
                         if (!isNaN(grade)) classAverages[semesterKey][key] = grade;
                     }
                 }
@@ -164,14 +194,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         for (let i = 0; i < dataArray.length; i++) {
             const row = dataArray[i];
-            const apogee = row["CODE APOGEE"] ? row["CODE APOGEE"].toString().trim() : "";
+            const apogee = safeTrim(row["CODE APOGEE"] || row["NUMERO"]);
 
             // Skip metadata rows and empty rows
             if (!apogee || apogee === "MAX" || apogee === "MOYENNE") continue;
 
-            const firstName = row["First Name "] ? row["First Name "].trim() : "";
-            const lastName = row["Last Name "] ? row["Last Name "].trim() : "";
-            let moyenne = row["Moyennes"] ? row["Moyennes"].toString().trim() : "";
+            const firstName = safeTrim(row["First Name "]);
+            const lastName = safeTrim(row["Last Name "]);
+            let moyenne = safeTrim(row["Moyennes"]);
             const numMoy = parseFloat(moyenne.replace(',', '.'));
             if (!isNaN(numMoy)) {
                 moyenne = numMoy.toFixed(2);
@@ -181,7 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
             for (const [key, value] of Object.entries(row)) {
                 if (key !== "CODE APOGEE" && key !== "First Name " && key !== "Last Name " && key !== "Moyennes" && key !== "NUMERO") {
                     if (key && key.trim() !== "") {
-                        let grade = value ? value.toString().trim() : "";
+                        let grade = safeTrim(value);
                         const numGrade = parseFloat(grade.replace(',', '.'));
                         if (!isNaN(numGrade)) {
                             grade = numGrade.toFixed(2);
@@ -284,47 +314,164 @@ document.addEventListener('DOMContentLoaded', () => {
         return false;
     };
 
+    // Highlight match query inside autocomplete item
+    const highlightMatch = (text, query) => {
+        if (!query) return text;
+        const escapedQuery = query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+        const regex = new RegExp(`(${escapedQuery})`, 'gi');
+        return text.replace(regex, '<span class="highlight">$1</span>');
+    };
+
+    let activeSuggestionIndex = -1;
+    let filteredSuggestions = [];
+
+    // Show custom suggestions dropdown
+    const showSuggestions = (query) => {
+        suggestionsContainer.innerHTML = '';
+        activeSuggestionIndex = -1;
+
+        if (query.length < 2) {
+            suggestionsContainer.classList.add('hidden');
+            clearSearchBtn.classList.add('hidden');
+            return;
+        }
+
+        clearSearchBtn.classList.remove('hidden');
+
+        // Filter matches
+        const isNumberQuery = /^\d/.test(query);
+        if (isNumberQuery) {
+            filteredSuggestions = studentsList.filter(s => s.apogee.startsWith(query));
+        } else {
+            filteredSuggestions = studentsList.filter(s => isFuzzyMatch(s, query));
+        }
+
+        // Limit results to 8
+        filteredSuggestions = filteredSuggestions.slice(0, 8);
+
+        if (filteredSuggestions.length === 0) {
+            const noResult = document.createElement('div');
+            noResult.className = 'suggestion-item';
+            noResult.style.color = 'var(--text-muted)';
+            noResult.style.fontStyle = 'italic';
+            noResult.style.cursor = 'default';
+            noResult.textContent = 'Aucun étudiant trouvé';
+            suggestionsContainer.appendChild(noResult);
+            suggestionsContainer.classList.remove('hidden');
+            return;
+        }
+
+        filteredSuggestions.forEach((student, index) => {
+            const item = document.createElement('div');
+            item.className = 'suggestion-item';
+            item.setAttribute('data-index', index);
+
+            const nameText = `${student.lastName} ${student.firstName}`;
+            const nameSpan = document.createElement('span');
+            nameSpan.innerHTML = highlightMatch(nameText, query);
+
+            const apogeeSpan = document.createElement('span');
+            apogeeSpan.className = 'apogee-code';
+            apogeeSpan.innerHTML = highlightMatch(student.apogee, query);
+
+            item.appendChild(nameSpan);
+            item.appendChild(apogeeSpan);
+
+            // Click listener
+            item.addEventListener('click', () => {
+                selectSuggestion(student);
+            });
+
+            suggestionsContainer.appendChild(item);
+        });
+
+        suggestionsContainer.classList.remove('hidden');
+    };
+
+    const selectSuggestion = (student) => {
+        searchInput.value = `${student.lastName} ${student.firstName}`;
+        suggestionsContainer.classList.add('hidden');
+        displayStudent(student);
+        searchInput.blur();
+    };
+
+    const updateActiveSuggestion = () => {
+        const items = suggestionsContainer.querySelectorAll('.suggestion-item');
+        items.forEach((item, index) => {
+            if (index === activeSuggestionIndex) {
+                item.classList.add('active');
+                item.scrollIntoView({ block: 'nearest' });
+            } else {
+                item.classList.remove('active');
+            }
+        });
+    };
+
     // Dynamic Suggestions
     searchInput.addEventListener('input', (e) => {
-        const query = e.target.value.trim();
-        studentsListEl.innerHTML = ''; // Clear previous suggestions
+        showSuggestions(e.target.value.trim());
+    });
 
-        if (query.length < 2) return; // Don't suggest for empty or 1 letter
-
-        const isNumberQuery = /^\d/.test(query);
-
-        if (isNumberQuery) {
-            // Suggest Apogée codes
-            const matches = studentsList.filter(s => s.apogee.startsWith(query));
-            matches.slice(0, 5).forEach(student => {
-                const option = document.createElement('option');
-                option.value = student.apogee;
-                studentsListEl.appendChild(option);
-            });
-        } else {
-            // Suggest Names
-            const matches = studentsList.filter(s => isFuzzyMatch(s, query));
-            matches.slice(0, 5).forEach(student => {
-                const option = document.createElement('option');
-                option.value = `${student.lastName} ${student.firstName}`;
-                studentsListEl.appendChild(option);
-            });
+    searchInput.addEventListener('focus', (e) => {
+        if (e.target.value.trim().length >= 2) {
+            showSuggestions(e.target.value.trim());
         }
     });
 
-    // Helper to calculate Global Average
+    // Keyboard navigation
+    searchInput.addEventListener('keydown', (e) => {
+        const items = suggestionsContainer.querySelectorAll('.suggestion-item');
+        const hasVisibleSuggestions = !suggestionsContainer.classList.contains('hidden') && items.length > 0;
+        if (!hasVisibleSuggestions) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            activeSuggestionIndex = (activeSuggestionIndex + 1) % filteredSuggestions.length;
+            updateActiveSuggestion();
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            activeSuggestionIndex = (activeSuggestionIndex - 1 + filteredSuggestions.length) % filteredSuggestions.length;
+            updateActiveSuggestion();
+        } else if (e.key === 'Enter') {
+            if (activeSuggestionIndex >= 0 && activeSuggestionIndex < filteredSuggestions.length) {
+                e.preventDefault();
+                selectSuggestion(filteredSuggestions[activeSuggestionIndex]);
+            }
+        } else if (e.key === 'Escape') {
+            suggestionsContainer.classList.add('hidden');
+            searchInput.blur();
+        }
+    });
+
+    // Clear Search Input Button
+    clearSearchBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        suggestionsContainer.classList.add('hidden');
+        clearSearchBtn.classList.add('hidden');
+        resultsContainer.classList.add('hidden');
+        errorMessage.style.opacity = '0';
+        currentStudent = null;
+        if (radarChartInstance) {
+            radarChartInstance.destroy();
+            radarChartInstance = null;
+        }
+        searchInput.focus();
+    });
+
+    // Dismiss suggestions when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.search-input-wrapper')) {
+            suggestionsContainer.classList.add('hidden');
+        }
+    });
+
+    // Helper to calculate Global Average (Exclusion logic removed)
     const getGlobalAverage = (student) => {
         let totalAvg = 0;
         let avgCount = 0;
         if (student.s1?.moyenne && !isNaN(parseFloat(student.s1.moyenne))) { totalAvg += parseFloat(student.s1.moyenne); avgCount++; }
         if (student.s2?.moyenne && !isNaN(parseFloat(student.s2.moyenne))) { totalAvg += parseFloat(student.s2.moyenne); avgCount++; }
         if (student.s3?.moyenne && !isNaN(parseFloat(student.s3.moyenne))) { totalAvg += parseFloat(student.s3.moyenne); avgCount++; }
-
-        const fullNameLower = `${student.firstName} ${student.lastName}`.toLowerCase();
-        const isExcluded = (fullNameLower.includes('asmae') && fullNameLower.includes('karnaoui')) ||
-            (fullNameLower.includes('nouhaila') && fullNameLower.includes('boulekhrif'));
-
-        if (isExcluded) return -1; // Excluded
 
         if (avgCount > 0) {
             return parseFloat((totalAvg / avgCount).toFixed(2));
@@ -369,11 +516,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const globalAvgNum = getGlobalAverage(student);
         globalAverageEl.style.fontSize = ''; // Reset font size in case it was changed
 
-        if (globalAvgNum === -1) {
-            globalAverageEl.textContent = 'EXCLU';
-            globalAverageEl.style.color = '#ef4444'; // Red color
-            globalAverageEl.style.fontSize = '1.8rem';
-        } else if (globalAvgNum > 0) {
+        if (globalAvgNum > 0) {
             const globalStr = globalAvgNum.toFixed(2);
             globalAverageEl.textContent = globalStr;
             globalAverageEl.style.color = calculateGradeColor(globalStr);
@@ -513,7 +656,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        const labels = Object.keys(studentSubjects).map(l => l.replace(/\uFFFD/g, 'e').substring(0, 20) + (l.length > 20 ? '...' : ''));
+        const labels = Object.keys(studentSubjects).map(l => cleanTextEncoding(l).substring(0, 20) + (l.length > 20 ? '...' : ''));
         const studentData = Object.values(studentSubjects).map(val => parseFloat(val) || 0);
         const avgData = Object.keys(studentSubjects).map(key => parseFloat(compareSubjects[key]) || null);
 

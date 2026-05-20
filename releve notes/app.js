@@ -250,7 +250,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     matrix[i][j] = Math.min(
                         matrix[i - 1][j - 1] + 1, // substitution
                         Math.min(matrix[i][j - 1] + 1, // insertion
-                        matrix[i - 1][j] + 1)); // deletion
+                            matrix[i - 1][j] + 1)); // deletion
                 }
             }
         }
@@ -261,7 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const isFuzzyMatch = (student, query) => {
         const normQuery = normalizeString(query);
         if (!normQuery) return false;
-        
+
         // Exact Apogee match
         if (student.apogee === query.trim()) return true;
 
@@ -336,7 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const displayStudent = (student) => {
         currentStudent = student;
         errorMessage.style.opacity = '0';
-        
+
         const leaderboardContainer = document.getElementById('leaderboardContainer');
         if (leaderboardContainer) leaderboardContainer.classList.add('hidden');
 
@@ -384,7 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Show container
         resultsContainer.classList.remove('hidden');
-        
+
         // Update Chart
         updateChart();
 
@@ -401,7 +401,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderLeaderboard = () => {
         const leaderboardContainer = document.getElementById('leaderboardContainer');
         const leaderboardList = document.getElementById('leaderboardList');
-        
+
         resultsContainer.classList.add('hidden');
         errorMessage.style.opacity = '0';
         leaderboardContainer.classList.remove('hidden');
@@ -413,7 +413,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 globalAvgNum: getGlobalAverage(s)
             };
         }).filter(s => s.globalAvgNum > 0)
-        .sort((a, b) => b.globalAvgNum - a.globalAvgNum);
+            .sort((a, b) => b.globalAvgNum - a.globalAvgNum);
 
         leaderboardList.innerHTML = '';
 
@@ -571,7 +571,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         pointLabels: {
                             font: { family: "'Inter', sans-serif", size: window.innerWidth < 768 ? 9 : 11 },
                             color: '#475569',
-                            callback: function(label) {
+                            callback: function (label) {
                                 if (window.innerWidth < 768 && label.length > 10) {
                                     return label.substring(0, 10) + '...';
                                 }

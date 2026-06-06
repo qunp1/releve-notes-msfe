@@ -1,4 +1,4 @@
-﻿[
+[
     {
         "NUMERO":  "MAX",
         "CODE APOGEE":  "",
@@ -20,7 +20,7 @@
         "Last Name ":  "",
         "Evaluation de l\u0027entreprise":  "15.64",
         "Comptabilite Approfondie":  "8.33",
-        "Management de la Logistique":  "11.66",
+        "Management de la Logistique":  "11.87",
         "Diagnostic Strategique":  "13.46",
         "Gestion de Portefeuille":  "14.78",
         "Anglais":  "14.06",
@@ -76,12 +76,12 @@
         "Last Name ":  "ANAS",
         "Evaluation de l\u0027entreprise":  "16.00",
         "Comptabilite Approfondie":  "13.00",
-        "Management de la Logistique":  "8.50",
+        "Management de la Logistique":  "12.00",
         "Diagnostic Strategique":  "15.50",
         "Gestion de Portefeuille":  "17.20",
         "Anglais":  "15.00",
         "Logiciels et Analyse de donnes":  "12.50",
-        "Moyennes":  "13.96"
+        "Moyennes":  "14.46"
     },
     {
         "NUMERO":  "5",
@@ -174,12 +174,12 @@
         "Last Name ":  "SANAE",
         "Evaluation de l\u0027entreprise":  "16.50",
         "Comptabilite Approfondie":  "2.00",
-        "Management de la Logistique":  "8.00",
+        "Management de la Logistique":  "12.00",
         "Diagnostic Strategique":  "13.50",
         "Gestion de Portefeuille":  "16.60",
         "Anglais":  "14.50",
         "Logiciels et Analyse de donnes":  "10.50",
-        "Moyennes":  "11.66"
+        "Moyennes":  "12.23"
     },
     {
         "NUMERO":  "12",
@@ -244,12 +244,12 @@
         "Last Name ":  "FATIMA",
         "Evaluation de l\u0027entreprise":  "16.00",
         "Comptabilite Approfondie":  "6.00",
-        "Management de la Logistique":  "8.00",
+        "Management de la Logistique":  "6.50",
         "Diagnostic Strategique":  "13.50",
         "Gestion de Portefeuille":  "15.10",
         "Anglais":  "14.00",
         "Logiciels et Analyse de donnes":  "14.00",
-        "Moyennes":  "12.37"
+        "Moyennes":  "12.16"
     },
     {
         "NUMERO":  "17",
@@ -426,12 +426,12 @@
         "Last Name ":  "JIHANE",
         "Evaluation de l\u0027entreprise":  "15.50",
         "Comptabilite Approfondie":  "7.50",
-        "Management de la Logistique":  "7.00",
+        "Management de la Logistique":  "8.50",
         "Diagnostic Strategique":  "13.50",
         "Gestion de Portefeuille":  "14.20",
         "Anglais":  "13.00",
         "Logiciels et Analyse de donnes":  "12.50",
-        "Moyennes":  "11.89"
+        "Moyennes":  "12.10"
     },
     {
         "NUMERO":  "30",
@@ -552,12 +552,12 @@
         "Last Name ":  "IKRAM",
         "Evaluation de l\u0027entreprise":  "15.00",
         "Comptabilite Approfondie":  "6.00",
-        "Management de la Logistique":  "8.50",
+        "Management de la Logistique":  "11.00",
         "Diagnostic Strategique":  "12.00",
         "Gestion de Portefeuille":  "13.90",
         "Anglais":  "14.00",
         "Logiciels et Analyse de donnes":  "13.50",
-        "Moyennes":  "11.84"
+        "Moyennes":  "12.20"
     },
     {
         "NUMERO":  "39",
